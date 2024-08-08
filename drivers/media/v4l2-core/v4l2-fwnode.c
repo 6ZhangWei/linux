@@ -15,6 +15,7 @@
  * Author: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
  */
 #include <linux/acpi.h>
+#include <linux/delay.h>
 #include <linux/kernel.h>
 #include <linux/mm.h>
 #include <linux/module.h>
@@ -1268,6 +1269,9 @@ v4l2_async_nf_parse_fwnode_sensor(struct device *dev,
 	};
 	unsigned int i;
 
+#if defined(CONFIG_IPU_ISYS_BRIDGE)
+	msleep_interruptible(500);
+#endif
 	for (i = 0; i < ARRAY_SIZE(props); i++) {
 		int ret;
 
