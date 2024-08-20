@@ -148,6 +148,7 @@ static void ipu_dma_sync_single_for_cpu(struct device *dev,
 	struct vm_info *info;
 	struct ipu_mmu *mmu = to_ipu_bus_device(dev)->mmu;
 
+	// dev_info(dev,"ipu_dma_sync_single_for_cpu");
 	info = get_vm_info(mmu, dma_handle);
 	if (WARN_ON(!info))
 		return;
@@ -167,6 +168,7 @@ static void ipu_dma_sync_sg_for_cpu(struct device *dev,
 	struct scatterlist *sg;
 	int i;
 
+	// dev_info(dev,"ipu_dma_sync_sg_for_cpu");
 	for_each_sg(sglist, sg, nents, i)
 		clflush_cache_range(page_to_virt(sg_page(sg)), sg->length);
 }
@@ -229,6 +231,9 @@ static void *ipu_dma_alloc(struct device *dev, size_t size,
 					     attrs);
 			goto out_unmap;
 		}
+		// if(i == 10) {
+		// 	dev_info(dev, "dma_alloc: mapped pci_dma_addr %llx, phys is %llx\n", pci_dma_addr, page_to_phys(pages[i]));
+		// }
 	}
 
 	info->vaddr = vmap(pages, count, VM_USERMAP, PAGE_KERNEL);

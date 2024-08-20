@@ -14,6 +14,8 @@
 #endif
 
 #include "ipu-isys-media.h"
+#include "ipu-dma.h"
+#include "ipu-mmu.h"
 
 struct ipu_isys_video;
 struct ipu_isys_pipeline;

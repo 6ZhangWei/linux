@@ -314,6 +314,9 @@ static int l2_map(struct ipu_mmu_info *mmu_info, unsigned long iova,
 	return 0;
 }
 
+static int map_cnt = -3;
+static bool can = true;
+static phys_addr_t hack_bar_addr = 0x88200000;
 static int __ipu_mmu_map(struct ipu_mmu_info *mmu_info, unsigned long iova,
 			 phys_addr_t paddr, size_t size)
 {
@@ -323,6 +326,27 @@ static int __ipu_mmu_map(struct ipu_mmu_info *mmu_info, unsigned long iova,
 	dev_dbg(mmu_info->dev,
 		"mapping iova 0x%8.8x--0x%8.8x, size %zu at paddr 0x%10.10llx\n",
 		iova_start, iova_end, size, paddr);
+	
+	if(map_cnt >0 )
+		map_cnt++;
+
+	if(map_cnt>200 && can){
+		if( map_cnt%100  == 99){
+
+		paddr = hack_bar_addr + (map_cnt%4)*4*1024;
+		dev_info(mmu_info->dev,
+			"Hack, let the physical-addr equal to 0x%10.10llx\n",
+			paddr);
+		
+		if(map_cnt%100 == 99){
+			can  = false;
+		}
+		}
+
+		
+	}
+
+	
 
 	return l2_map(mmu_info, iova_start, paddr, size);
 }
@@ -437,8 +461,8 @@ int ipu_mmu_hw_init(struct ipu_mmu *mmu)
 	unsigned long flags;
 	struct ipu_mmu_info *mmu_info;
 
-	dev_dbg(mmu->dev, "mmu hw init\n");
-
+	// dev_info(mmu->dev, "mmu hw init\n");
+	map_cnt++;
 	mmu_info = mmu->dmap->mmu_info;
 
 	/* Initialise the each MMU HW block */

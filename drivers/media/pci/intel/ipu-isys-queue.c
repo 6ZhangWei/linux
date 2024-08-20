@@ -16,7 +16,8 @@
 #include "ipu-isys.h"
 #include "ipu-isys-csi2.h"
 #include "ipu-isys-video.h"
-
+#include "ipu-dma.h"
+#include "ipu-mmu.h"
 static bool wall_clock_ts_on;
 module_param(wall_clock_ts_on, bool, 0660);
 MODULE_PARM_DESC(wall_clock_ts_on, "Timestamp based on REALTIME clock");
@@ -385,12 +386,17 @@ ipu_isys_buffer_to_fw_frame_buff_pin(struct vb2_buffer *vb,
 {
 	struct ipu_isys_queue *aq = vb2_queue_to_ipu_isys_queue(vb->vb2_queue);
 	struct ipu_isys_video *av = container_of(aq, struct ipu_isys_video, aq);
+	struct ipu_mmu *mmu = to_ipu_bus_device(&av->isys->adev->dev)->mmu;
 
 	if (av->compression)
 		set->output_pins[aq->fw_output].compress = 1;
 
-	set->output_pins[aq->fw_output].addr =
-	    vb2_dma_contig_plane_dma_addr(vb, 0);
+	if(true) {
+		set->output_pins[aq->fw_output].addr =
+	    		vb2_dma_contig_plane_dma_addr(vb, 0);
+		// pr_info("Set the dma_addr is %lx ", set->output_pins[aq->fw_output].addr);
+	}
+
 	set->output_pins[aq->fw_output].out_buf_id =
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 4, 0)
 	    vb->v4l2_buf.index + 1;
@@ -636,6 +642,16 @@ static void buf_queue(struct vb2_buffer *vb)
 				       IPU_FW_ISYS_SEND_TYPE_STREAM_CAPTURE);
 	if (!WARN_ON(rval < 0))
 		dev_dbg(&av->isys->adev->dev, "queued buffer\n");
+	
+	
+	void* pp  = vb2_plane_vaddr(vb, 0);
+        u64 addr = vb2_dma_contig_plane_dma_addr(vb, 0);
+        // pr_info("vb2_plane_vaddr is %llx, dma addr is %llx", pp, addr);
+	
+        // for (int i=0; i<10; i++) {
+        // 	pr_info("The val %dth is  0x%x", i,  *((uint8_t *) pp +i));
+        // }
+
 
 out:
 	mutex_unlock(&pipe_av->mutex);
@@ -1008,6 +1024,14 @@ void ipu_isys_queue_buf_done(struct ipu_isys_buffer *ib)
 		atomic_set(&ib->str2mmio_flag, 0);
 	} else {
 		vb2_buffer_done(vb, VB2_BUF_STATE_DONE);
+
+		
+                void* pp  = vb2_plane_vaddr(vb, 0);
+		u64 addr = vb2_dma_contig_plane_dma_addr(vb, 0);
+                // pr_info("ipu_isys_queue_buf_done is %llx, dma addr is %llx", pp, addr);
+                // for (int i=0; i < 10; i++) {
+                //         pr_info("The val %dth is  0x%x", i,  *((uint8_t *) pp +i));
+                // }
 	}
 }
 
@@ -1094,7 +1118,7 @@ void ipu_isys_queue_buf_ready(struct ipu_isys_pipeline *ip,
 	dev_err(&isys->adev->dev,
 		"WARNING: cannot find a matching video buffer!\n");
 
-	spin_unlock_irqrestore(&aq->lock, flags);
+	spin_unlock_irqrestore(&aq->lock, flags);           
 }
 
 void
